@@ -1,0 +1,19 @@
+{
+  "clumps_wf.clumps_prep.huniprot2pdb": "/Users/kamburov/work/docker/clumps/huniprot2pdb.slice.gz",
+  "clumps_wf.clumps_prep.inMaf": "tt/SLICE_mc3.v0.2.8.PUBLIC.ttype.maf.gz",
+  "clumps_wf.clumps_prep.scatterWidth": 4,
+
+  "clumps_wf.clumps_prep.hg19": "tt/hg19.2bit",
+
+  "clumps_wf.clumps_test_candidate.sampler": "UniformSampler",
+  "clumps_wf.clumps_test_candidate.coveragetrack": "/Users/kamburov/work/docker/clumps/tt/allCancerGenes.txt",
+  "clumps_wf.clumps_test_scan.ttype": "PanCan",
+
+  "clumps_wf.clumps_test_scan.sampler": "UniformSampler",
+  "clumps_wf.clumps_test_scan.coveragetrack": "/Users/kamburov/work/docker/clumps/tt/allCancerGenes.txt",
+  "clumps_wf.clumps_test_candidate.ttype": "PanCan",
+
+  "clumps_wf.clumps_make_report.cancerGeneList": "/Users/kamburov/work/docker/clumps/tt/allCancerGenes.txt",
+  "clumps_wf.clumps_make_report.huniprot2pdb": "/Users/kamburov/work/docker/clumps/huniprot2pdb.slice.gz",
+  "clumps_wf.clumps_make_report.ttype": "PanCan"
+}

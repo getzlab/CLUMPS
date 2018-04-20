@@ -1,0 +1,8 @@
+MUTURL = '../dat/splitByProtein/'     ## location of mutation files
+MUTTYPES = set(['M'])       ## types of mutations to consider (anything other than 'M' may not make sense)
+MAXRAND = 10000000          ## maximum number of random permutations of mutation positions to assess p-value
+HILLEXP = 3                 ## Hill function exponent
+PANCANFACTOR = 0.5          ## a value between 0 and 1 that controls the contribution of clusters of mutations from different tumor types
+XPO = [3, 4.5, 6, 8, 10]    ## 'soft threshold' parameter for the truncated Gaussian fct.
+USEPROVIDEDVALUES = False   ## consider mutation weights provided by the user
+CLUMPSMUTSAMPLEFILT = 15    ## minimum number of samples sontributing mutations in a given structure (for statistical power)
