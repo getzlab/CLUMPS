@@ -1,0 +1,9 @@
+#1)                           ## update sifts; 
+#2) blast.py (section 1)      ## create the sifts-based blast database for sifts-(anyspecies)-uniprot to human-uniprot maps
+#3) mappingPipeline.py        ## maps human proteins to PDB chains (direct maps through sifts and indirect maps through blasting+sifts)
+#4) selectReprStructures.py   ## selects structures to be tested with clumps and other methods (all native structures; fill gaps with the best non-native ones)
+#5) identifyUnknownChains.py  ## some popypeptide chains are not annotated with UniProt; this script does it (should do it both for the filt and non-filt huniprot2pdb)
+#6) splitHuniprot2pdbMap.py   ## split the unfiltered huniprot2pdb for fast searching
+7) blast.py (section 2)      ## blat human-uniprot to human-genome
+#8) extractDNARNAchains.py    ## preprocess DNA and RNA chain information (for protein-DNA/RNA interface analysis)
+#9) calcSampleMutationFrequencies.py  ## calculate the somatic mutation frequency per sample (used for mutation weighting)
