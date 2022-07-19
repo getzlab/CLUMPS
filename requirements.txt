@@ -11,8 +11,8 @@ fail2ban==0.9.3
 iniparse==0.4
 iotop==0.6
 kitchen==1.1.1
-lxml==4.2.1
-numpy==1.14.2
+lxml==4.2.5
+numpy==1.19
 pandas==0.22.0
 patsy==0.5.0
 perf==0.1

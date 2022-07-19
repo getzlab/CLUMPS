@@ -1,6 +1,8 @@
 FROM centos
 
 ## YUM INSTALLS
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 RUN yum -y install gcc && yum clean all
 RUN yum -y install nano && yum clean all
 RUN yum -y install java-1.8.0 && yum clean all
