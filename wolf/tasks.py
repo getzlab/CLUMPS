@@ -193,6 +193,7 @@ def clumps_workflow(
         cancer_genes="gs://sa-clumps2-ref/dat/allCancerGenes.txt",
         uniprot_map="gs://sa-clumps2-ref/dat/huniprot/huniprot2pdb.run18.filt.txt",
         ttype="PanCan",
+        timeout=0,
         scatterwidth=350,
         lineId = -1,
         threads=16,
