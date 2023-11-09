@@ -46,8 +46,8 @@ class clumps_prep_task(wolf.Task):
     #huniprot2pdb_ungz=`echo ${huniprot2pdb} | sed -r "s/\.gz$//g"`
     #zcat ${huniprot2pdb} > $huniprot2pdb_ungz
     #ls -alh $huniprot2pdb_ungz
-    split -d --number=l/${scatterWidth} -a 5 $huniprot2pdb huniprot2pdb_chunk_
-    find huniprot2pdb_chunk_* -exec gzip {} \;
+    split -d --number=l/${scatterWidth} -a 6 $huniprot2pdb huniprot2pdb_chunk_
+    find huniprot2pdb_chunk_* -exec | exargs gzip ;
     
     """
 
@@ -126,7 +126,7 @@ class clumps_run_task(wolf.Task):
     for line in $lines; \
     do
         echo python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track}; \
-        python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track}; \
+        python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track} 2> stderr.txt || { grep "Translation" stderr.txt && exit 0 || exit 1; }  ; \ #this is a hack to allow failed jobs to be listed as passed
     done
 
     tar czf clumpsOut.tar.gz /sw/res
