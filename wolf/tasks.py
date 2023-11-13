@@ -20,9 +20,7 @@ class clumps_prep_task(wolf.Task):
     inputs = {
         "inMaf" : None,
         "genome_2bit" : None,
-        "fasta" : None, 
-        "scatterWidth" : None,
-        "huniprot2pdb" : None
+        "fasta" : None,
     }
 
     script = """
@@ -43,22 +41,44 @@ class clumps_prep_task(wolf.Task):
     python /sw/src/calcSampleMutationFrequencies.py tmp.maf #${inMaf}
     python /sw/src/calcMutationContexts.py tmp.maf #${inMaf}
 
-    #huniprot2pdb_ungz=`echo ${huniprot2pdb} | sed -r "s/\.gz$//g"`
-    #zcat ${huniprot2pdb} > $huniprot2pdb_ungz
-    #ls -alh $huniprot2pdb_ungz
-    split -d --number=l/${scatterWidth} -a 6 $huniprot2pdb huniprot2pdb_chunk_
-    find huniprot2pdb_chunk_* -exec | exargs gzip ;
     
     """
 
     output_patterns = {
         "mutations" : "splitByProtein",
         "sampleMutFreq" : "sampleMutFreq.txt",
-        "sampleMutSpectra" : "sampleMutSpectra.txt",
-        "prot2pdbchunks" : "huniprot2pdb_chunk_*"
+        "sampleMutSpectra" : "sampleMutSpectra.txt"
+
     }
     
     docker = CLUMPS_DOCKER_IMAGE
+
+
+class split_prot2pdb(wolf.Task):
+    # Preparation for clumps input files:
+    # computes mutational frequencies, spectra, and identifies protein structures needed
+    resources = {"mem": "8G"}
+
+    # input data for the 'prep' step is the mutation annotation file (maf)
+    # <Required> Input file for CLUMPS. Default expects .maf
+    inputs = {
+        "scatterWidth": None,
+        "huniprot2pdb": None
+    }
+
+    script = """
+
+    split -d --number=l/${scatterWidth} -a 6 $huniprot2pdb huniprot2pdb_chunk_
+    find huniprot2pdb_chunk_* -exec | xargs gzip ;
+
+    """
+
+    output_patterns = {
+        "prot2pdbchunks": "huniprot2pdb_chunk_*"
+    }
+
+    docker = CLUMPS_DOCKER_IMAGE
+
 
 class clumps_run_task(wolf.Task):
     # this task is the main clumps processing/algorithm
@@ -93,7 +113,7 @@ class clumps_run_task(wolf.Task):
         "lineId" : -1
     }
 
-    overrides = { "prot2pdb_chunks" : "delayed" }
+    overrides = { "split_prot2pdb" : "delayed" }
 
     
     script = """
@@ -214,19 +234,22 @@ def clumps_workflow(
         inputs=dict(
             inMaf=maf,
             genome_2bit=localization_results['genome_2bit'],
-            fasta=localization_results['fasta'],
+            fasta=localization_results['fasta']
+        )
+    )
+    split_prot2pdb_results = split_prot2pdb(
+        inputs=dict(
             scatterWidth=scatterwidth,
             huniprot2pdb=localization_results['uniprot_map']
         )
     )
-
     clumps_results = clumps_run_task(
         inputs=dict(
             mutationsTarball=clumps_prep_results['mutations'],
             sampleMutFreq=clumps_prep_results['sampleMutFreq'],
             sampleMutSpectra=clumps_prep_results['sampleMutSpectra'],
             setfile=setfile,
-            prot2pdb_chunks=clumps_prep_results['prot2pdbchunks'],
+            prot2pdb_chunks=split_prot2pdb_results['prot2pdbchunks'],
             pdb_dir=localization_results['pdb_dir'],
             coverage_track=localization_results['coverage_track'],
             coverage_track_index=localization_results['coverage_track_index'], # not actually used as an input; just needs to be localized alongside coverage_track
