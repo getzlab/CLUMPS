@@ -69,7 +69,7 @@ class split_prot2pdb(wolf.Task):
     script = """
 
     split -d --number=l/${scatterWidth} -a 6 $huniprot2pdb huniprot2pdb_chunk_
-    find huniprot2pdb_chunk_* -exec | xargs gzip ;
+    find huniprot2pdb_chunk_  | xargs gzip ;
 
     """
 
@@ -118,10 +118,10 @@ class clumps_run_task(wolf.Task):
     
     script = """
     ## making sure we're writing to local disk (not boot disk)
-    mkdir sw
-    cp -vr /sw/* sw
-    rm -rf /sw
-    ln -vs $PWD/sw /sw
+    #mkdir sw
+    #cp -vr /sw/* sw
+    #rm -rf /sw
+    #ln -vs $PWD/sw /sw
     #unpack mutations from clumps prep
     #tar xzvf ${mutationsTarball} && mv splitByProtein /sw/dat/
     cp -r ${mutationsTarball} /sw/dat/
@@ -151,6 +151,8 @@ class clumps_run_task(wolf.Task):
 
     tar czf clumpsOut.tar.gz /sw/res
     mv -v clumpsOut.tar.gz $START_DIR
+    
+    
 
     """
 
