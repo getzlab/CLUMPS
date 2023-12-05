@@ -83,7 +83,7 @@ class split_prot2pdb(wolf.Task):
 class clumps_run_task(wolf.Task):
     # this task is the main clumps processing/algorithm
     #resources = { "partition" : "n1-highcpu-64-nonp", "cpus-per-task" : 64, "mem": "50200M" }
-    resources = {"cpus-per-task" : 16}
+    resources = {"cpus-per-task" : 16, "mem": "8G" }
     conf = {"clust_frac": 1}
     # the input files for this step are the different individual prot2pdb chunks from the huniprot2pdb_chunks folder
     # provide a list of all the individual prot2pdb chunks (or the file path to each prot2pdb chunks file)
@@ -97,7 +97,10 @@ class clumps_run_task(wolf.Task):
         "sampleMutFreq" : "sampleMutFreq.txt",
         "sampleMutSpectra" : "sampleMutSpectra.txt",
         "setfile" : None,  #specifies #permutations, protein file location, hillexp, pancanfactor, and other things
-        "prot2pdb_chunks" : None,
+        #"prot2pdb_chunks" : None, Passing full uniprot file, then splitting in this task
+        "scatter_width": 350,
+        "scatter_idx": list(range(350)),
+        "uniprot_map":None,
         "pdb_dir" : None,
         "coverage_track" : None,
         "coverage_track_index" : None, # not actually used as an input; just needs to be localized alongside coverage_track
@@ -127,13 +130,20 @@ class clumps_run_task(wolf.Task):
     cp -r ${mutationsTarball} /sw/dat/
 
     #link 2bit, fasta locally a
-    ln ${genome_2bit} /sw/src/
-    ln ${fasta}  /sw/src/
+    ln -s ${genome_2bit} /sw/src/
+    ln -s ${fasta}  /sw/src/
     
     mkdir -p /sw/dat/ftp.wwpdb.org/pub/pdb/data/structures/divided/
-    ln ${pdb_dir} /sw/dat/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb #... think I need to do this so pdb is in expected location? 
+    ln -s ${pdb_dir} /sw/dat/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb #... think I need to do this so pdb is in expected location? 
     
-    #then this is done to parse through huniprot list
+    #then this is done to parse through uniprot list
+    fulllines=`cat ${uniprot_map} | wc -l`
+    chunksize=`expr $fulllines / $scatterwidth`
+    start_idx=`expr $scatter_idx \* $chunksize + 1`
+    end_idx=`expr $start_idx + $chunksize - 1 `
+    sed -n "${start_idx},${end_idx}p" ${uniprot_map} | gzip > prot2pdbchunk_0000.gz
+    cp prot2pdbchunk_0000.gz /sw/src/
+    prot2pdb_chunks=prot2pdbchunk_0000.gz
     if [ ${lineId} = -1 ]; then
         nlines=`zcat ${prot2pdb_chunks} | wc -l`
         lines=$(seq 1 $nlines)
@@ -146,7 +156,7 @@ class clumps_run_task(wolf.Task):
     for line in $lines; \
     do
         echo python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track}; \
-        python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track} 2> stderr.txt || { grep "Translation" stderr.txt && exit 0 || exit 1; }  ; \ #this is a hack to allow failed jobs to be listed as passed
+        python clumps2.py ${setfile} ${timeout} ${nthreads} ${prot2pdb_chunks} $line ${ttype} ${sampler} ${sampleMutFreq} ${sampleMutSpectra} ${coverage_track} 2> stderr.txt || { grep "Translation" stderr.txt && exit 0 || exit 1; }  ;   \
     done
 
     tar czf clumpsOut.tar.gz /sw/res
@@ -168,10 +178,9 @@ class clumps_postprocess_task(wolf.Task):
     
     inputs = {
         "mutationsSplitByProtein" : None,
-        "clumpsCandidatesOut" : None, # this is an array of directories, which in turn contain multiple files
-        "huniprot2pdb" : None,
+        #"clumpsCandidatesOut" : None, # this is an array of directories, which in turn contain multiple files
+        "uniprot_map" : None,
         "clumpsScanOut": None,
-        "clumpsCandidatesOut" : None,
         "cancerGeneList" : None,
         "ttype" : None,
         "setfile" : None
@@ -185,18 +194,33 @@ class clumps_postprocess_task(wolf.Task):
         do
             tar xzvf $file
         done
-        mv sw/res/clumps /sw/res/
+        #copying, rather than moving is probably the way to go
+        cp -Lr sw/res/clumps /sw/res/
         
-        
-        mv ${mutationsSplitByProtein} /sw/dat/
-        python /sw/src/clumps_postprocess.py ${setfile}  /sw/res/clumps ${cancerGeneList} ${huniprot2pdb} ${ttype}
+        #same here
+        cp -Lr ${mutationsSplitByProtein} /sw/dat/
+
+        if  [[ $uniprot_map =~ \.gz$ ]]  | grep -q gzip$
+        then   
+            echo "uniprot file is gzipped" 
+            python /sw/src/clumps_postprocess.py ${setfile}  /sw/res/clumps ${cancerGeneList} ${uniprot_map} ${ttype} 
+        else   
+            echo "uniprot file is not gzipped"; 
+            cp -L ${uniprot_map} .
+            uniprot_map=$(basename $uniprot_map)
+            gzip ${uniprot_map}
+            uniprot_gz=${uniprot_map}.gz
+            python /sw/src/clumps_postprocess.py ${setfile}  /sw/res/clumps ${cancerGeneList} ${uniprot_gz} ${ttype}   
+        fi
+    
+        #python /sw/src/clumps_postprocess.py ${setfile}  /sw/res/clumps ${cancerGeneList} ${uniprot_map} ${ttype}
 
 
     """
     
     # Output file from CLUMPS with list of genes
     output_patterns = {
-        "clumps_output" : "clumps_output.tsv"
+        "clumps_output" : "clumps.summary.txt"
     }
     
     # Docker Image
@@ -239,19 +263,22 @@ def clumps_workflow(
             fasta=localization_results['fasta']
         )
     )
-    split_prot2pdb_results = split_prot2pdb(
-        inputs=dict(
-            scatterWidth=scatterwidth,
-            huniprot2pdb=localization_results['uniprot_map']
-        )
-    )
+    #split_prot2pdb_results = split_prot2pdb(
+    #    inputs=dict(
+    #        scatterWidth=scatterwidth,
+    #        huniprot2pdb=localization_results['uniprot_map']
+    #    )
+    #)
     clumps_results = clumps_run_task(
         inputs=dict(
             mutationsTarball=clumps_prep_results['mutations'],
             sampleMutFreq=clumps_prep_results['sampleMutFreq'],
             sampleMutSpectra=clumps_prep_results['sampleMutSpectra'],
             setfile=setfile,
-            prot2pdb_chunks=split_prot2pdb_results['prot2pdbchunks'],
+            #prot2pdb_chunks=split_prot2pdb_results['prot2pdbchunks'],
+            uniprot_map=localization_results['uniprot_map'],
+            scatterwidth=scatterwidth,
+            scatter_idx = list(range(scatterwidth)),
             pdb_dir=localization_results['pdb_dir'],
             coverage_track=localization_results['coverage_track'],
             coverage_track_index=localization_results['coverage_track_index'], # not actually used as an input; just needs to be localized alongside coverage_track
@@ -269,9 +296,9 @@ def clumps_workflow(
     clumps_post_results = clumps_postprocess_task(
         inputs=dict(
             mutationsSplitByProtein=clumps_prep_results['mutations'],
-            clumpsCandidatesOut=[clumps_results['run_outdir']],
+            #clumpsCandidatesOut=[clumps_results['run_outdir']],
             # this is an array of directories, which in turn contain multiple files
-            huniprot2pdb=localization_results['uniprot_map'],
+            uniprot_map=localization_results['uniprot_map'],
             clumpsScanOut=[clumps_results['run_outdir']],
             cancerGeneList=localization_results['cancer_genes'],
             setfile=setfile,
