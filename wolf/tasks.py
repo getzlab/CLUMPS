@@ -83,8 +83,10 @@ class split_prot2pdb(wolf.Task):
 class clumps_run_task(wolf.Task):
     # this task is the main clumps processing/algorithm
     #resources = { "partition" : "n1-highcpu-64-nonp", "cpus-per-task" : 64, "mem": "50200M" }
-    resources = {"cpus-per-task" : 16, "mem": "8G" }
+    resources = {"cpus-per-task" : 32, "mem": "8G" }
     conf = {"clust_frac": 1}
+    #preemptible = False
+    
     # the input files for this step are the different individual prot2pdb chunks from the huniprot2pdb_chunks folder
     # provide a list of all the individual prot2pdb chunks (or the file path to each prot2pdb chunks file)
 
@@ -108,7 +110,7 @@ class clumps_run_task(wolf.Task):
         "fasta" : None,
         #"gpmaps" : None, #unsure if this gets used
         "sampler" : "UniformSampler",
-        "nthreads" : 16,
+        "nthreads" : 32,
         "timeout" : 0,
         "ttype" : "pancan" ,
         #"pancan_factor" : 1,

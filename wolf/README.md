@@ -2,10 +2,11 @@
 Notebooks for gathering individual results of CLUMPS run, for when failure were encountered:
 
 gather_102k_results.ipynb
+
 gather_Alphafold_results.ipynb
 
 
-Results files::
+Results files:
 
 results/Alphafold.clumps.summary.txt
 
@@ -13,7 +14,7 @@ results/CLUMPS_2018_results.txt
 
 results/Pancan102k.clumps.summary.txt
 
-Run on individual shars, MC3 MAF against alphafold:
+Run on individual shards, MC3 MAF against alphafold:
 
 run_clumps_Alphafold_wf_widescatter.ipynb
 
